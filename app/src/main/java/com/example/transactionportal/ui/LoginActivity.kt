@@ -2,6 +2,8 @@ package com.example.transactionportal.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.TextUtils
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.transactionportal.R
 import com.example.transactionportal.data.ApiClient
@@ -27,33 +29,52 @@ class LoginActivity : AppCompatActivity() {
 
         apiClient = ApiClient()
         tokenManager = TokenManager(this)
-
-        binding.loginBtn.setOnClickListener {
+        fun login() {
             apiClient.getApiService(this).login(
                 LoginRequest(
-                    name = binding.name.toString(),
-                    password = binding.password.toString()
+                    name = binding.name.text.toString(), password = binding.password.text.toString()
                 )
             )
                 .enqueue(object : Callback<LoginResponse> {
-                    override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                        // Error logging in
-                    }
 
                     override fun onResponse(
                         call: Call<LoginResponse>,
                         response: Response<LoginResponse>
                     ) {
                         val loginResponse = response.body()
-                        if (loginResponse?.code == 200 || loginResponse?.code == 100) {
-                            tokenManager.saveAuthToken(loginResponse.result)
+                        if (response.isSuccessful) {
+                            Toast.makeText(this@LoginActivity, "Success", Toast.LENGTH_SHORT).show()
+                            if (loginResponse != null) {
+                                tokenManager.saveAuthToken(loginResponse.result)
+                            }
                             val intent = Intent(this@LoginActivity, MainActivity::class.java)
                             startActivity(intent)
                         } else {
-                            // Error logging in
+                            Toast.makeText(
+                                this@LoginActivity,
+                                "Failed to login",
+                                Toast.LENGTH_SHORT
+                            )
+                                .show()
                         }
+                    }
+
+                    override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                        Toast.makeText(
+                            this@LoginActivity,
+                            "Throwable " + t.localizedMessage,
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 })
         }
+        binding.loginBtn.setOnClickListener {
+            if (TextUtils.isEmpty(binding.name.text.toString()) || TextUtils.isEmpty(binding.password.text.toString())) {
+                Toast.makeText(this, "Enter all fields please", Toast.LENGTH_SHORT).show()
+            } else {
+                login()
+            }
+        }
+
     }
 }
